@@ -4,7 +4,7 @@ from pathlib import Path
 from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.core import HomeAssistant
 
-BLUEPRINTS = (("script","intercom","garagentorsteuerung-intercom"),("script","steuerung","garagentorsteuerung"),("automation","knx-rueckmeldung","garage-knx-rueckmeldung"))
+BLUEPRINTS = (("script","intercom","garagentorsteuerung-intercom"),("script","steuerung","garagentorsteuerung"),("automation","knx-rueckmeldung","garage-knx-rueckmeldung"),("automation","istposition","garage-istposition"))
 
 
 def _install(root: Path) -> set[str]:
