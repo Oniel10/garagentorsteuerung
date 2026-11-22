@@ -1,0 +1,116 @@
+"blueprint":
+  "name": "Garage – Befehl weitergeben"
+  "description": "Entitäten und KNX-Adressen bei der Einrichtung zuordnen."
+  "domain": "script"
+  "source_url": "https://github.com/Oniel10/garagentorsteuerung/blob/main/blueprints/script/intercom.yaml"
+  "homeassistant":
+    "min_version": "2024.10.0"
+  "input":
+    "input_boolean_turn_on":
+      "name": "input boolean turn on"
+      "selector":
+        "entity":
+          "domain": "input_boolean"
+    "input_boolean_garage_stopp_ausgelost":
+      "name": "input boolean garage stopp ausgelost"
+      "selector":
+        "entity":
+          "domain": "input_boolean"
+    "timer_garage_loxone_lebenszeichen":
+      "name": "timer garage loxone lebenszeichen"
+      "selector":
+        "entity":
+          "domain": "timer"
+    "knx_1":
+      "name": "KNX-Ein- oder Ausgang 1"
+      "selector":
+        "text": {}
+    "input_number_garage_wunschposition":
+      "name": "input number garage wunschposition"
+      "selector":
+        "entity":
+          "domain": "input_number"
+    "knx_2":
+      "name": "KNX-Ein- oder Ausgang 2"
+      "selector":
+        "text": {}
+    "knx_3":
+      "name": "KNX-Ein- oder Ausgang 3"
+      "selector":
+        "text": {}
+    "knx_4":
+      "name": "KNX-Ein- oder Ausgang 4"
+      "selector":
+        "text": {}
+    "knx_5":
+      "name": "KNX-Ein- oder Ausgang 5"
+      "selector":
+        "text": {}
+    "knx_6":
+      "name": "KNX-Ein- oder Ausgang 6"
+      "selector":
+        "text": {}
+"mode": "queued"
+"max": 4
+"sequence":
+  -
+    "condition": "template"
+    "value_template": "{{ befehl in ['auf', 'zu', 'stop', 'ziel', 'referenz'] }}"
+  -
+    "if":
+      -
+        "condition": "template"
+        "value_template": "{{ befehl == 'stop' }}"
+    "then":
+      -
+        "action": !input input_boolean_turn_on
+        "target":
+          "entity_id": !input input_boolean_garage_stopp_ausgelost
+  -
+    "choose":
+      -
+        "conditions":
+          -
+            "condition": "state"
+            "entity_id": !input timer_garage_loxone_lebenszeichen
+            "state": "active"
+        "sequence":
+          -
+            "if":
+              -
+                "condition": "template"
+                "value_template": "{{ befehl == 'ziel' }}"
+            "then":
+              -
+                "action": "knx.send"
+                "data":
+                  "address": !input knx_1
+                  "type": "percent"
+                  "payload": "{{ states(input_number_garage_wunschposition) | int(50) }}"
+          -
+            "action": "knx.send"
+            "data":
+              "address": "{{ {'auf':knx_2,'zu':knx_3,'stop':knx_4,'referenz':knx_5,'ziel':knx_6}[befehl] }}"
+              "payload": 1
+    "default":
+      -
+        "if":
+          -
+            "condition": "template"
+            "value_template": "{{ befehl == 'stop' }}"
+        "then":
+          -
+            "action": "knx.send"
+            "data":
+              "address": !input knx_4
+              "payload": 1
+        "else":
+          -
+            "stop": "Loxone nicht erreichbar. Manueller HA-Notbetrieb wartet auf unabhängige KNX-Rückmeldungen."
+"variables":
+  "input_number_garage_wunschposition": !input input_number_garage_wunschposition
+  "knx_2": !input knx_2
+  "knx_3": !input knx_3
+  "knx_4": !input knx_4
+  "knx_5": !input knx_5
+  "knx_6": !input knx_6
