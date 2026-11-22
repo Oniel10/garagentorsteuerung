@@ -1,0 +1,80 @@
+blueprint:
+  name: Garage – KNX-Istposition
+  description: Empfängt Prozentposition und Gültigkeit über KNX.
+  domain: automation
+  source_url: https://github.com/Oniel10/garagentorsteuerung/blob/main/blueprints/automation/istposition.yaml
+  homeassistant:
+    min_version: "2024.10.0"
+  input:
+    position_address:
+      name: KNX-Adresse Istposition
+      selector:
+        text: {}
+    validity_address:
+      name: KNX-Adresse Gültigkeit
+      selector:
+        text: {}
+    position:
+      name: Istposition
+      selector:
+        entity:
+          domain: input_number
+    position_fresh:
+      name: Timer Positionsmeldung
+      selector:
+        entity:
+          domain: timer
+    validity_fresh:
+      name: Timer Gültigkeitsmeldung
+      selector:
+        entity:
+          domain: timer
+mode: queued
+triggers:
+  - trigger: knx.telegram
+    destination: !input position_address
+    type: percent
+    group_value_read: false
+    group_value_response: true
+    outgoing: false
+    id: position
+  - trigger: knx.telegram
+    destination: !input validity_address
+    group_value_read: false
+    group_value_response: true
+    outgoing: false
+    id: validity
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: position
+          - condition: template
+            value_template: "{{ trigger.value is number and 0 <= trigger.value <= 100 }}"
+        sequence:
+          - action: input_number.set_value
+            target:
+              entity_id: !input position
+            data:
+              value: "{{ trigger.value | round(0) | int }}"
+          - action: timer.start
+            target:
+              entity_id: !input position_fresh
+      - conditions:
+          - condition: trigger
+            id: validity
+        sequence:
+          - if:
+              - condition: template
+                value_template: "{{ trigger.payload in [1, true, [1]] }}"
+            then:
+              - action: timer.start
+                target:
+                  entity_id: !input validity_fresh
+            else:
+              - action: timer.cancel
+                target:
+                  entity_id: !input validity_fresh
+              - action: timer.cancel
+                target:
+                  entity_id: !input position_fresh
