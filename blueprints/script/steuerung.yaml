@@ -15,17 +15,37 @@ blueprint:
       name: Unabhängige Endlage AUF
       selector:
         entity:
-          domain: binary_sensor
+          domain: [binary_sensor, input_select]
     closed_limit:
       name: Unabhängige Endlage ZU
       selector:
         entity:
-          domain: binary_sensor
+          domain: [binary_sensor, input_select]
     motor:
       name: Unabhängiges Motorsignal
       selector:
         entity:
-          domain: binary_sensor
+          domain: [binary_sensor, input_select]
+    auf_frisch:
+      name: Gültigkeit Endlage AUF
+      selector:
+        entity:
+          domain: timer
+    zu_frisch:
+      name: Gültigkeit Endlage ZU
+      selector:
+        entity:
+          domain: timer
+    motor_frisch:
+      name: Gültigkeit Motorspannung
+      selector:
+        entity:
+          domain: timer
+    loxone_watchdog:
+      name: Lebenszeichen-Timer der Hauptsteuerung
+      selector:
+        entity:
+          domain: timer
     up:
       name: KNX-Taster für AUF
       selector:
@@ -52,31 +72,43 @@ sequence:
   - condition: state
     entity_id: !input permit
     state: "on"
+  - condition: state
+    entity_id: !input loxone_watchdog
+    state: "idle"
+  - condition: state
+    entity_id: !input auf_frisch
+    state: "active"
+  - condition: state
+    entity_id: !input zu_frisch
+    state: "active"
+  - condition: state
+    entity_id: !input motor_frisch
+    state: "active"
   - condition: template
     value_template: >
       {{ befehl in ['AUF', 'ZU', 'STOP']
-         and states(motor_entity) in ['on', 'off']
-         and states(up_limit) in ['on', 'off']
-         and states(down_limit) in ['on', 'off']
-         and not (is_state(up_limit, 'on') and is_state(down_limit, 'on')) }}
+         and states(motor_entity) in ['on', 'off', 'Ein', 'Aus']
+         and states(up_limit) in ['on', 'off', 'Ein', 'Aus']
+         and states(down_limit) in ['on', 'off', 'Ein', 'Aus']
+         and not (states(up_limit) in ['on', 'Ein'] and states(down_limit) in ['on', 'Ein']) }}
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ befehl == 'STOP' and is_state(motor_entity, 'on') }}"
+            value_template: "{{ befehl == 'STOP' and states(motor_entity) in ['on', 'Ein'] }}"
         sequence:
           - action: button.press
             target:
               entity_id: !input up
       - conditions:
           - condition: template
-            value_template: "{{ befehl == 'AUF' and is_state(motor_entity, 'off') and is_state(up_limit, 'off') }}"
+            value_template: "{{ befehl == 'AUF' and states(motor_entity) in ['off', 'Aus'] and states(up_limit) in ['off', 'Aus'] }}"
         sequence:
           - action: button.press
             target:
               entity_id: !input up
       - conditions:
           - condition: template
-            value_template: "{{ befehl == 'ZU' and is_state(motor_entity, 'off') and is_state(down_limit, 'off') }}"
+            value_template: "{{ befehl == 'ZU' and states(motor_entity) in ['off', 'Aus'] and states(down_limit) in ['off', 'Aus'] }}"
         sequence:
           - action: button.press
             target:
