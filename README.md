@@ -34,3 +34,7 @@ Die Summe der vier Produkte plus 1 geht an I13. Die Kontaktzeit wird am KNX-Akto
 Die Referenzfahrt startet an einer bestätigten Endlage. Jede vollständige Fahrt speichert die gemessene Zeit der Richtung. Teilziele brauchen zwei gültige Zeiten. Aus einer unbekannten Position wird zuerst die obere Endlage angefahren. STOP verwirft eine geplante Weiterfahrt.
 
 Ein manueller HA-Notbetrieb setzt voraus, dass HA beide Endlagen und das Motorsignal unabhängig von Loxone empfängt. Torbefehle bleiben bis zu dieser Zuordnung gesperrt.
+
+## Beispielschaltplan mit Loxone und KNX
+
+[Schaltplan V8 öffnen](beispiele/loxone-knx/garagentor-schaltplan-v8.svg). Das Beispiel zeigt einen Loxone Miniserver, einen Normstahl Magic 1000-3 und einen KNX-SwitchME12. Die eingezeichneten Gruppenadressen, Aderfarben und Aktorkanäle dokumentieren den Beispielstand. Für die eigene Anlage die tatsächliche Belegung prüfen.
