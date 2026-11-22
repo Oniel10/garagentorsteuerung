@@ -1,0 +1,83 @@
+blueprint:
+  name: Garage – manueller KNX-Notbetrieb
+  description: Ein- und Ausgänge bei der Einrichtung zuordnen.
+  domain: script
+  source_url: https://github.com/Oniel10/garagentorsteuerung/blob/main/blueprints/script/steuerung.yaml
+  homeassistant:
+    min_version: "2024.10.0"
+  input:
+    permit:
+      name: Notbetrieb ausdrücklich freigeben
+      selector:
+        entity:
+          domain: input_boolean
+    open_limit:
+      name: Unabhängige Endlage AUF
+      selector:
+        entity:
+          domain: binary_sensor
+    closed_limit:
+      name: Unabhängige Endlage ZU
+      selector:
+        entity:
+          domain: binary_sensor
+    motor:
+      name: Unabhängiges Motorsignal
+      selector:
+        entity:
+          domain: binary_sensor
+    up:
+      name: KNX-Taster für AUF
+      selector:
+        entity:
+          domain: button
+    down:
+      name: KNX-Taster für ZU
+      selector:
+        entity:
+          domain: button
+mode: single
+fields:
+  befehl:
+    name: Torbefehl
+    required: true
+    selector:
+      select:
+        options: [AUF, ZU, STOP]
+variables:
+  motor_entity: !input motor
+  up_limit: !input open_limit
+  down_limit: !input closed_limit
+sequence:
+  - condition: state
+    entity_id: !input permit
+    state: "on"
+  - condition: template
+    value_template: >
+      {{ befehl in ['AUF', 'ZU', 'STOP']
+         and states(motor_entity) in ['on', 'off']
+         and states(up_limit) in ['on', 'off']
+         and states(down_limit) in ['on', 'off']
+         and not (is_state(up_limit, 'on') and is_state(down_limit, 'on')) }}
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ befehl == 'STOP' and is_state(motor_entity, 'on') }}"
+        sequence:
+          - action: button.press
+            target:
+              entity_id: !input up
+      - conditions:
+          - condition: template
+            value_template: "{{ befehl == 'AUF' and is_state(motor_entity, 'off') and is_state(up_limit, 'off') }}"
+        sequence:
+          - action: button.press
+            target:
+              entity_id: !input up
+      - conditions:
+          - condition: template
+            value_template: "{{ befehl == 'ZU' and is_state(motor_entity, 'off') and is_state(down_limit, 'off') }}"
+        sequence:
+          - action: button.press
+            target:
+              entity_id: !input down
