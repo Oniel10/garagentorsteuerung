@@ -1,0 +1,43 @@
+blueprint:
+  name: Garage – unabhängige KNX-Rückmeldung
+  description: Pro Rückmeldung einmal einrichten. Gültige KNX-Telegramme aktualisieren Zustand und Gültigkeit.
+  domain: automation
+  source_url: https://github.com/Oniel10/garagentorsteuerung/blob/main/blueprints/automation/knx-rueckmeldung.yaml
+  homeassistant:
+    min_version: "2024.10.0"
+  input:
+    address:
+      name: KNX-Gruppenadresse der Rückmeldung
+      selector:
+        text:
+    indication:
+      name: Zustandshelfer mit den Optionen Unbekannt, Aus und Ein
+      selector:
+        entity:
+          domain: input_select
+    freshness:
+      name: Gültigkeitstimer
+      selector:
+        entity:
+          domain: timer
+mode: queued
+triggers:
+  - trigger: knx.telegram
+    destination: !input address
+    group_value_read: false
+    group_value_response: true
+    outgoing: false
+variables:
+  bit: "{{ (trigger.payload[0] if trigger.payload is sequence and trigger.payload | length == 1 else trigger.payload) | int(-1) }}"
+conditions:
+  - condition: template
+    value_template: "{{ bit in [0, 1] }}"
+actions:
+  - action: input_select.select_option
+    target:
+      entity_id: !input indication
+    data:
+      option: "{{ 'Ein' if bit == 1 else 'Aus' }}"
+  - action: timer.start
+    target:
+      entity_id: !input freshness
