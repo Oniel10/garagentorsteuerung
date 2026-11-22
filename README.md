@@ -38,3 +38,7 @@ Ein manueller HA-Notbetrieb setzt voraus, dass HA beide Endlagen und das Motorsi
 ## Beispielschaltplan mit Loxone und KNX
 
 [Schaltplan V8 öffnen](beispiele/loxone-knx/garagentor-schaltplan-v8.svg). Das Beispiel zeigt einen Loxone Miniserver, einen Normstahl Magic 1000-3 und einen KNX-SwitchME12. Die eingezeichneten Gruppenadressen, Aderfarben und Aktorkanäle dokumentieren den Beispielstand. Für die eigene Anlage die tatsächliche Belegung prüfen.
+
+## Stückliste
+
+[Teile für Loxone mit KNX, Loxone ohne KNX und KNX ohne Loxone](STUECKLISTE.md)
