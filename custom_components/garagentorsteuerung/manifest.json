@@ -1,0 +1,15 @@
+{
+  "domain": "garagentorsteuerung",
+  "name": "Garagentorsteuerung",
+  "codeowners": [
+    "@Oniel10"
+  ],
+  "documentation": "https://github.com/Oniel10/garagentorsteuerung",
+  "iot_class": "local_push",
+  "version": "0.1.0",
+  "dependencies": [
+    "automation",
+    "script"
+  ],
+  "config_flow": true
+}
