@@ -1,0 +1,112 @@
+blueprint:
+  name: Garage – einmal bei Ankunft öffnen
+  description: Pro berechtigtem Konto eine Instanz einrichten.
+  domain: automation
+  source_url: https://github.com/Oniel10/garagentorsteuerung/blob/main/blueprints/automation/ankunft.yaml
+  homeassistant:
+    min_version: "2024.10.0"
+  input:
+    person:
+      name: Anwesenheit
+      selector:
+        entity:
+          domain: person
+    button:
+      name: Vormerkbutton
+      selector:
+        entity:
+          domain: input_button
+    permit:
+      name: Berechtigung
+      selector:
+        entity:
+          domain: input_boolean
+    armed:
+      name: Persönliche Vormerkung
+      selector:
+        entity:
+          domain: input_boolean
+    watchdog:
+      name: Loxone-Lebenszeichen
+      selector:
+        entity:
+          domain: timer
+    status:
+      name: Torstatus
+      selector:
+        entity:
+          domain: input_select
+    command:
+      name: Garagenbefehl
+      selector:
+        entity:
+          domain: script
+    account:
+      name: HA-Benutzer-ID der Person
+      selector:
+        text: {}
+mode: queued
+variables:
+  account_id: !input account
+triggers:
+  - trigger: state
+    entity_id: !input button
+    not_to: [unknown, unavailable]
+    id: press
+  - trigger: state
+    entity_id: !input person
+    not_from: [home, unknown, unavailable]
+    to: home
+    id: arrival
+  - trigger: state
+    entity_id: !input permit
+    to: "off"
+    id: revoke
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: press
+          - condition: template
+            value_template: >-
+              {{ trigger.to_state is not none and
+                 trigger.to_state.context.user_id == account_id }}
+          - condition: state
+            entity_id: !input permit
+            state: "on"
+        sequence:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: !input armed
+      - conditions:
+          - condition: trigger
+            id: revoke
+        sequence:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: !input armed
+      - conditions:
+          - condition: trigger
+            id: arrival
+          - condition: state
+            entity_id: !input armed
+            state: "on"
+        sequence:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: !input armed
+          - condition: state
+            entity_id: !input permit
+            state: "on"
+          - condition: state
+            entity_id: !input watchdog
+            state: active
+          - condition: state
+            entity_id: !input status
+            state: Geschlossen
+          - action: script.turn_on
+            target:
+              entity_id: !input command
+            data:
+              variables:
+                befehl: auf
