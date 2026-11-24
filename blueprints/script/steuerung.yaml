@@ -22,10 +22,23 @@ blueprint:
         entity:
           domain: [binary_sensor, input_select]
     motor:
-      name: Unabhängiges Motorsignal
+      name: Unabhängiges Motorsignal (gesamt oder AUF)
       selector:
         entity:
           domain: [binary_sensor, input_select]
+    motor_down:
+      name: Unabhängiges Motorsignal ZU (optional)
+      description: Bei getrennten Signalen oben AUF und hier ZU zuordnen.
+      default: ""
+      selector:
+        entity:
+          domain: [binary_sensor, input_select]
+    motor_down_frisch:
+      name: Gültigkeit Motorsignal ZU (bei getrennten Signalen)
+      default: ""
+      selector:
+        entity:
+          domain: timer
     auf_frisch:
       name: Gültigkeit Endlage AUF
       selector:
@@ -66,6 +79,8 @@ fields:
         options: [AUF, ZU, STOP]
 variables:
   motor_entity: !input motor
+  motor_down_entity: !input motor_down
+  motor_down_timer: !input motor_down_frisch
   up_limit: !input open_limit
   down_limit: !input closed_limit
 sequence:
@@ -88,27 +103,32 @@ sequence:
     value_template: >
       {{ befehl in ['AUF', 'ZU', 'STOP']
          and states(motor_entity) in ['on', 'off', 'Ein', 'Aus']
+         and (motor_down_entity == '' or (
+           motor_down_entity != motor_entity
+           and motor_down_timer != ''
+           and is_state(motor_down_timer, 'active')
+           and states(motor_down_entity) in ['on', 'off', 'Ein', 'Aus']))
          and states(up_limit) in ['on', 'off', 'Ein', 'Aus']
          and states(down_limit) in ['on', 'off', 'Ein', 'Aus']
          and not (states(up_limit) in ['on', 'Ein'] and states(down_limit) in ['on', 'Ein']) }}
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ befehl == 'STOP' and states(motor_entity) in ['on', 'Ein'] }}"
+            value_template: "{{ befehl == 'STOP' and (states(motor_entity) in ['on', 'Ein'] or (motor_down_entity != '' and states(motor_down_entity) in ['on', 'Ein'])) }}"
         sequence:
           - action: button.press
             target:
               entity_id: !input up
       - conditions:
           - condition: template
-            value_template: "{{ befehl == 'AUF' and states(motor_entity) in ['off', 'Aus'] and states(up_limit) in ['off', 'Aus'] }}"
+            value_template: "{{ befehl == 'AUF' and states(motor_entity) in ['off', 'Aus'] and (motor_down_entity == '' or states(motor_down_entity) in ['off', 'Aus']) and states(up_limit) in ['off', 'Aus'] }}"
         sequence:
           - action: button.press
             target:
               entity_id: !input up
       - conditions:
           - condition: template
-            value_template: "{{ befehl == 'ZU' and states(motor_entity) in ['off', 'Aus'] and states(down_limit) in ['off', 'Aus'] }}"
+            value_template: "{{ befehl == 'ZU' and states(motor_entity) in ['off', 'Aus'] and (motor_down_entity == '' or states(motor_down_entity) in ['off', 'Aus']) and states(down_limit) in ['off', 'Aus'] }}"
         sequence:
           - action: button.press
             target:
